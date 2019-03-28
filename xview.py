@@ -31,7 +31,7 @@ parser.add_argument("--save_freq", type=int, default=5000, help="save model ever
 parser.add_argument("--separable_conv", action="store_true", help="use separable convolutions in the generator")
 parser.add_argument("--aspect_ratio", type=float, default=1.0, help="aspect ratio of output images (width/height)")
 parser.add_argument("--batch_size", type=int, default=1, help="number of images in batch")
-parser.add_argument("--which_direction", type=str, default="AtoB", choices=["AtoB", "BtoA"])
+parser.add_argument("--which_direction", type=str, default="a2g", choices=["a2g", "g2a"])
 parser.add_argument("--ngf", type=int, default=64, help="number of generator filters in first conv layer")
 parser.add_argument("--ndf", type=int, default=64, help="number of discriminator filters in first conv layer")
 parser.add_argument("--scale_size", type=int, default=286, help="scale images to this size before cropping to 256x256")
@@ -107,21 +107,6 @@ def batchnorm(inputs):
     return tf.layers.batch_normalization(inputs, axis=3, epsilon=1e-5, momentum=0.1, training=True, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
 
 
-def check_image(image):
-    assertion = tf.assert_equal(tf.shape(image)[-1], 3, message="image must have 3 color channels")
-    with tf.control_dependencies([assertion]):
-        image = tf.identity(image)
-
-    if image.get_shape().ndims not in (3, 4):
-        raise ValueError("image must be either 3 or 4 dimensions")
-
-    # make the last dimension 3 so that you can unstack the colors
-    shape = list(image.get_shape())
-    shape[-1] = 3
-    image.set_shape(shape)
-    return image
-
-
 def load_examples():
     if a.input_dir is None or not os.path.exists(a.input_dir):
         raise Exception("input_dir does not exist")
@@ -162,13 +147,15 @@ def load_examples():
 
         # break apart image pair and move to range [-1, 1]
         width = tf.shape(raw_input)[1] # [height, width, channels]
-        a_images = preprocess(raw_input[:,:width//2,:])
-        b_images = preprocess(raw_input[:,width//2:,:])
+        A_images = preprocess(raw_input[:,:width//4,:])
+        B_images = preprocess(raw_input[:,width//4:width//2,:])
+        As_images = preprocess(raw_input[:,width//2:3*(width//4),:])
+        Bs_images = preprocess(raw_input[:,3*(width//4):,:])
 
-    if a.which_direction == "AtoB":
-        inputs, targets = [a_images, b_images]
-    elif a.which_direction == "BtoA":
-        inputs, targets = [b_images, a_images]
+    if a.which_direction == "g2a":
+        inputs, targets = [A_images, B_images]
+    elif a.which_direction == "a2g":
+        inputs, targets = [B_images, A_images]
     else:
         raise Exception("invalid direction")
 
@@ -209,6 +196,7 @@ def load_examples():
     )
 
 
+# U-Net Generator
 def create_generator(generator_inputs, generator_outputs_channels):
     layers = []
 
