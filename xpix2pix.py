@@ -14,11 +14,11 @@ import math
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input_dir", type=str, default="dayton/train", help="path to folder containing images")
+parser.add_argument("--input_dir", type=str, default="/media/zikui/Data/xview_data/ABAsBs/train", help="path to folder containing images")
 parser.add_argument("--mode", type=str, default="train", choices=["train", "test", "export"])
-parser.add_argument("--output_dir", type=str, default="dayton_train", help="where to put output files")
+parser.add_argument("--output_dir", type=str, default="/media/zikui/Data/xview_data/dayton_train", help="where to put output files")
 parser.add_argument("--which_direction", type=str, default="a2g", choices=["a2g", "g2a"])
-parser.add_argument("--max_epochs", type=int, default=200, help="number of training epochs")
+parser.add_argument("--max_epochs", type=int, default=35, help="number of training epochs")
 # parser.add_argument("--mode", required=True, choices=["train", "test", "export"])
 # parser.add_argument("--output_dir", required=True, help="where to put output files")
 parser.add_argument("--seed", type=int)
